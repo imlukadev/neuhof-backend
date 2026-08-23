@@ -16,8 +16,8 @@ class GamesService:
     def find_games(self):
         next_games: list[GameResponse]= []
         data:dict[str,Any] = self.sofascore.get_games()
-        data = data["next"]["events"] + data["live"]["events"]  + data["last"]["events"] 
         print(json.dumps(data))
+        data = data["next"]["events"] + data["live"]["events"]  + data["last"]["events"] 
         for i in data:
             date_utc = datetime.fromtimestamp(i["startTimestamp"], tz=timezone.utc)
 
