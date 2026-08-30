@@ -1,9 +1,8 @@
 from datetime import datetime, timezone
-import time
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.responses import GameResponse, TeamResponse
@@ -55,177 +54,15 @@ class GamesService:
         ]
 
     async def sync_games(self) -> list[GameResponse]:
-        total_start = time.perf_counter()
-
+        """
+        Busca os jogos no SofaScore e faz upsert no banco.
+        """
         games = self.find_games_from_source()
 
-        print(
-            f"[SYNC] SofaScore + conversão: "
-            f"{time.perf_counter() - total_start:.2f}s"
-        )
-        print(f"[SYNC] Jogos: {len(games)}")
-
-        if not games:
-            return []
-
-        # ============================================================
-        # 1. Coleta todos os times únicos dos jogos
-        # ============================================================
-
-        teams_by_external_id: dict[int, TeamResponse] = {}
-
-        for game in games:
-            teams_by_external_id[game.home_team.id] = game.home_team
-            teams_by_external_id[game.away_team.id] = game.away_team
-
-        team_ids = list(teams_by_external_id.keys())
-
-        # ============================================================
-        # 2. Busca todos os times existentes em UMA query
-        # ============================================================
-
-        start = time.perf_counter()
-
-        result = await self.db.execute(
-            select(Team).where(
-                Team.external_id.in_(team_ids)
-            )
-        )
-
-        existing_teams = result.scalars().all()
-
-        print(
-            f"[SYNC] SELECT teams: "
-            f"{time.perf_counter() - start:.2f}s "
-            f"({len(existing_teams)} encontrados)"
-        )
-
-        db_teams: dict[int, Team] = {
-            team.external_id: team
-            for team in existing_teams
-        }
-
-        # ============================================================
-        # 3. Cria/atualiza os times em memória
-        # ============================================================
-
-        for team_response in teams_by_external_id.values():
-            db_team = db_teams.get(team_response.id)
-
-            if db_team is None:
-                db_team = Team(
-                    external_id=team_response.id,
-                    name=team_response.name,
-                    color=team_response.color,
-                    secondary_color=team_response.secondary_color,
-                    text_color=team_response.text_color,
-                    name_code=team_response.name_code,
-                    image_url=team_response.image_url,
-                )
-
-                self.db.add(db_team)
-                db_teams[team_response.id] = db_team
-
-            else:
-                db_team.name = team_response.name
-                db_team.color = team_response.color
-                db_team.secondary_color = team_response.secondary_color
-                db_team.text_color = team_response.text_color
-                db_team.name_code = team_response.name_code
-                db_team.image_url = team_response.image_url
-
-        # Precisamos dos IDs dos novos times antes de criar os jogos.
-        start = time.perf_counter()
-
-        await self.db.flush()
-
-        print(
-            f"[SYNC] Flush teams: "
-            f"{time.perf_counter() - start:.2f}s"
-        )
-
-        # ============================================================
-        # 4. Busca todos os jogos existentes em UMA query
-        # ============================================================
-
-        game_ids = [game.id for game in games]
-
-        start = time.perf_counter()
-
-        result = await self.db.execute(
-            select(Game).where(
-                Game.external_id.in_(game_ids)
-            )
-        )
-
-        existing_games = result.scalars().all()
-
-        print(
-            f"[SYNC] SELECT games: "
-            f"{time.perf_counter() - start:.2f}s "
-            f"({len(existing_games)} encontrados)"
-        )
-
-        db_games: dict[int, Game] = {
-            game.external_id: game
-            for game in existing_games
-        }
-
-        # ============================================================
-        # 5. Cria/atualiza os jogos em memória
-        # ============================================================
-
-        for game in games:
-            home_team = db_teams[game.home_team.id]
-            away_team = db_teams[game.away_team.id]
-
-            start_at = game.start_at_germany.astimezone(
-                timezone.utc
-            )
-
-            db_game = db_games.get(game.id)
-
-            if db_game is None:
-                db_game = Game(
-                    external_id=game.id,
-                    season=game.season,
-                    round=game.round,
-                    start_at=start_at,
-                    home_team_id=home_team.id,
-                    away_team_id=away_team.id,
-                    home_score=game.home_score,
-                    away_score=game.away_score,
-                )
-
-                self.db.add(db_game)
-                db_games[game.id] = db_game
-
-            else:
-                db_game.season = game.season
-                db_game.round = game.round
-                db_game.start_at = start_at
-                db_game.home_team_id = home_team.id
-                db_game.away_team_id = away_team.id
-                db_game.home_score = game.home_score
-                db_game.away_score = game.away_score
-
-        # ============================================================
-        # 6. Commit único
-        # ============================================================
-
-        start = time.perf_counter()
+        for game_response in games:
+            await self._upsert_game(game_response)
 
         await self.db.commit()
-
-        print(
-            f"[SYNC] Commit: "
-            f"{time.perf_counter() - start:.2f}s"
-        )
-
-        print(
-            f"[SYNC] TOTAL: "
-            f"{time.perf_counter() - total_start:.2f}s"
-        )
 
         return games
 
@@ -336,7 +173,7 @@ class GamesService:
             print(db_game.start_at, game.start_at_germany.astimezone(timezone.utc))
             db_game.start_at = game.start_at_germany.astimezone(
                     timezone.utc
-            ),
+            )
             db_game.home_team_id = home_team.id
             db_game.away_team_id = away_team.id
             db_game.home_score = game.home_score
@@ -415,13 +252,3 @@ class GamesService:
             home_score=game.home_score,
             away_score=game.away_score,
         )
-    
-    
-    async def test_db(self):
-        start = time.perf_counter()
-    
-        result = await self.db.execute(
-            text("SELECT 1")
-        )
-    
-        print("DB:", time.perf_counter() - start)

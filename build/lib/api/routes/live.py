@@ -1,5 +1,3 @@
-
-
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +7,6 @@ from src.services.access_service import register_access
 from src.services.live_service import LiveService
 
 router = APIRouter(tags=["live"])
-
 
 
 def get_live_service(request: Request) -> LiveService:

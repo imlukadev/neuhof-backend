@@ -5,6 +5,8 @@ asyncpg<1.0,>=0.30
 alembic<2.0,>=1.16
 pydantic-settings<3.0,>=2.10
 selenium<5.0,>=4.35
+httpx<1.0,>=0.28
+tzdata>=2025.2
 
 [test]
 pytest<9.0,>=8.4

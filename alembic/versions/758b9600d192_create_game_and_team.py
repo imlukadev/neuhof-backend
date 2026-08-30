@@ -1,15 +1,15 @@
-"""generate game and team
+"""create game and team
 
-Revision ID: af1b5d98fa22
+Revision ID: 758b9600d192
 Revises: 0001_access_logs
-Create Date: 2026-08-23 18:36:54.166951
+Create Date: 2026-08-23 19:04:52.885697
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = 'af1b5d98fa22'
+revision: str = '758b9600d192'
 down_revision: Union[str, Sequence[str], None] = '0001_access_logs'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -34,8 +34,7 @@ def upgrade() -> None:
     sa.Column('external_id', sa.Integer(), nullable=False),
     sa.Column('season', sa.String(), nullable=True),
     sa.Column('round', sa.Integer(), nullable=True),
-    sa.Column('start_at_germany', sa.DateTime(), nullable=False),
-    sa.Column('start_at_brazil', sa.DateTime(), nullable=False),
+    sa.Column('start_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('home_team_id', sa.Integer(), nullable=False),
     sa.Column('away_team_id', sa.Integer(), nullable=False),
     sa.Column('home_score', sa.Integer(), nullable=True),
@@ -45,7 +44,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_games_external_id'), 'games', ['external_id'], unique=True)
-    op.drop_index(op.f('ix_access_logs_accessed_at'), table_name='access_logs')
+    # op.drop_index(op.f('ix_access_logs_accessed_at'), table_name='access_logs')
     # ### end Alembic commands ###
 
 

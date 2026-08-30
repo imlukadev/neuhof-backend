@@ -10,6 +10,8 @@ Requires-Dist: asyncpg<1.0,>=0.30
 Requires-Dist: alembic<2.0,>=1.16
 Requires-Dist: pydantic-settings<3.0,>=2.10
 Requires-Dist: selenium<5.0,>=4.35
+Requires-Dist: httpx<1.0,>=0.28
+Requires-Dist: tzdata>=2025.2
 Provides-Extra: test
 Requires-Dist: pytest<9.0,>=8.4; extra == "test"
 Requires-Dist: pytest-asyncio<2.0,>=1.1; extra == "test"

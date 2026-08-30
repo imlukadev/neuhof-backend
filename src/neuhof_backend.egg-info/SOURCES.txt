@@ -4,7 +4,10 @@ src/__init__.py
 src/config.py
 src/main.py
 src/api/__init__.py
+src/api/responses/__init__.py
+src/api/responses/game_response.py
 src/api/routes/__init__.py
+src/api/routes/games.py
 src/api/routes/health.py
 src/api/routes/live.py
 src/database/__init__.py
@@ -12,6 +15,8 @@ src/database/base.py
 src/database/connection.py
 src/models/__init__.py
 src/models/access_log.py
+src/models/game.py
+src/models/team.py
 src/neuhof_backend.egg-info/PKG-INFO
 src/neuhof_backend.egg-info/SOURCES.txt
 src/neuhof_backend.egg-info/dependency_links.txt
@@ -19,6 +24,8 @@ src/neuhof_backend.egg-info/requires.txt
 src/neuhof_backend.egg-info/top_level.txt
 src/services/__init__.py
 src/services/access_service.py
+src/services/games_service.py
 src/services/live_service.py
 src/services/scraper.py
+src/services/sofascore_client.py
 tests/test_scraper_parser.py
