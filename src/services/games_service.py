@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.orm import selectinload
 from src.api.responses import GameResponse, TeamResponse
 from src.models.game import Game
 from src.models.team import Team
@@ -26,6 +26,10 @@ class GamesService:
         """
         result = await self.db.execute(
             select(Game)
+            .options(
+                selectinload(Game.home_team),
+                selectinload(Game.away_team),
+            )
             .order_by(Game.start_at)
         )
 
